@@ -1,17 +1,16 @@
 import dotenv from "dotenv"
 dotenv.config()
 import app from './src/app.js';
+import {testAi} from './src/services/ai.service.js';
 import connectDB from './src/config/database.js';
 
 
 // Load environment variables
 
-
+testAi();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-console.log("USER:", process.env.GOOGLE_USER)
-console.log("CLIENT_ID:", process.env.GOOGLE_CLIENT_ID)
-console.log("REFRESH:", process.env.REFRESH_TOKEN)
+
 
 // Start Server
 const startServer = async () => {

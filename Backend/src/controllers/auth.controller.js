@@ -3,6 +3,12 @@ import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/email.api.js';
 
 
+
+/**
+ * @route POST /api/auth/register
+ * @desc Register a new user
+ * @access Public
+ */
 export async function register(req, res) {
   const { username, email, password } = req.body;
   console.log(email)
@@ -10,33 +16,171 @@ export async function register(req, res) {
   const isUserExist = await userModel.findOne({
     $or: [{ username }, { email }]
   })
-    if (isUserExist) {
-      return res.status(400).json({ 
-        message: 'User already exists',
-        success: false,
-        err:"Username or email already in use"
-    
+  if (isUserExist) {
+    return res.status(400).json({
+      message: 'User already exists',
+      success: false,
+      err: "Username or email already in use"
+
     });
+  }
+  const user = await userModel.create({ username, email, password })
+  const token = jwt.sign({
+    email: user.email
+    
+  }, process.env.JWT_SECRET)
+  await sendEmail({
+    to: email,
+    subject: 'Welcome to the QueryNest!',
+
+    text: 'Thank you for registering with us!',
+
+    html: `<p>Hi ${username},</p><p>Thank you for registering with us! We're excited to have you on board.</p>
+       <p>please  verify your email address by clicking the link below </p>
+       <a href="http://localhost:3000/api/auth/verify-email?token=${token}">Verify Email</a>
+    
+        <p>Best regards,<br/>The QueryNest Team</p>`
+  })
+
+
+
+  res.status(201).json({
+    message: 'User registered successfully',
+    success: true,
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email
     }
-    const user  = await userModel.create({username,email,password})
-    await sendEmail({
-        to: email,
-        subject: 'Welcome to the Perplexity!',
-        
-        text: 'Thank you for registering with us!',
-        html: `<p>Hi ${username},</p><p>Thank you for registering with us! We're excited to have you on board.</p><p>Best regards,<br/>The Perplexity Team</p>` 
+
+
+
+  })
+}
+
+/**
+  * @route POST /api/auth/login
+  * @desc Login a user
+  * @access Public
+ */
+export async function login(req, res) {
+  const { email, password } = req.body
+  const user = await userModel.findOne({ email }).select('+password')
+  if (!user) {
+    return res.status(400).json({
+      message: 'Invalid credentials',
+      success: false
+    })
+  }
+
+  const isPasswordValid = await user.matchPassword(password)
+  if(!isPasswordValid) {
+    return res.status(400).json({
+      message: 'Invalid credentials',
+      success: false,
+      err: 'Incorrect password'
+    })
+  }
+  if(!user.verified) {
+    return res.status(400).json({
+      message: 'Please verify your email before logging in',
+      success: false,
+      err: 'Email not verified'
+    })
+  }
+  const token = jwt.sign({
+    email: user.email
+  }, process.env.JWT_SECRET,{expiresIn:'7d'})
+
+  res.cookie('token', token)
+
+  res.status(200).json({
+    message: 'Login successful',
+    success: true,
+    user:{
+      id: user._id,
+      username: user.username,
+      email: user.email
+    }
+  })
+}
+
+/**
+ * @route GET /api/auth/get-me
+ * @desc Get current logged in user
+ * @access Private
+ */
+export async function getMe(req, res) {
+  try{
+   
+    const {email} = req.user
+  
+    const user = await userModel.findOne({email})
+    if(!user){
+      return res.status(404).json({ 
+        message: 'User not found',
+        success: false,
+        err: 'No user found with this id'
+      })
+
+    }
+
+    return res.status(200).json({
+      message: 'User fetched successfully',
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
     })
 
-    res.status(201).json({
-        message: 'User registered successfully',
-        success: true,  
-        user:{
-            id: user._id,
-            username: user.username,
-            email: user.email
-        }
-
-    
-
-})
+  }
+  catch(err){
+    return res.status(500).json({
+      message: 'Server error',
+      success: false,
+      err: err.message
+    })
+  }
 }
+ 
+
+
+
+/**
+ * @route GET /api/auth/verify-email
+ * @desc Verify user's email
+ * @access Public
+ */
+export async function verifyEmail(req, res) {
+  const { token } = req.query
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+const user = await userModel.findOne({ email: decoded.email })
+    if (!user) {
+      return res.status(400).json({
+        message: 'Invalid token',
+        success: false,
+        err: 'User not found'
+      })
+    }
+
+    user.verified = true
+    await user.save()
+
+   const  html =  `<p>Hi ${user.username},</p><p>Your email has been successfully verified! You can now log in to your account and start using our services.</p>
+<p>Best regards,<br/>The QueryNest Team</p>`
+   return res.send(html)
+
+   
+  }
+  catch (err) {
+    return res.status(500).json({
+      message: 'Server error',
+      success: false,
+      err: err.message
+    })
+  }
+}
+
