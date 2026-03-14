@@ -1,7 +1,7 @@
 import userModel from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/email.api.js';
-
+import {redis} from  '../config/cache.js'
 
 
 /**
@@ -184,3 +184,20 @@ const user = await userModel.findOne({ email: decoded.email })
   }
 }
 
+/**
+ * @route GET /api/auth/logout
+ * @desc Logout a user
+ * @access Private
+ */
+
+export async function logout(req, res) {
+    const token  = req.cookies.token
+  res.clearCookie('token')
+
+ await  redis.set(token,Date.now().toString())
+  return res.status(200).json({
+    message: 'Logout successfully',
+    success: true
+
+  })
+}
