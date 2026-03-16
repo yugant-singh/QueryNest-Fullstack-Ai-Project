@@ -1,13 +1,13 @@
 import dotenv from "dotenv"
 dotenv.config()
 import app from './src/app.js';
-import {testAi} from './src/services/ai.service.js';
+// import {testAi} from './src/services/ai.service.js';
 import connectDB from './src/config/database.js';
 
 
 // Load environment variables
 
-testAi();
+// testAi();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
