@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 
 import { useSelector } from 'react-redux'
 import { useChat } from '../hooks/useChat'
+import { useAuth } from '../../auth/hooks/useAuth'  // ✅ useAuth import kiya
 
 
 const Logo = () => (
@@ -35,7 +36,7 @@ const Logo = () => (
 // Custom components for ReactMarkdown
 const markdownComponents = {
 img: ({ src, alt }) => {
-  if (!src) return null  // ← empty src pe kuch mat dikhao
+  if (!src) return null
   return (
     <img
       src={src}
@@ -82,11 +83,13 @@ export default function Dashboard() {
   const [hoveredChat, setHoveredChat] = useState(null);
 
   const { handleGetAllChats, handleGetChatMessages, handleSendMessage, handleNewChat, handleDeleteChat } = useChat()
+  const { handleLogOut } = useAuth()  // ✅ handleLogOut liya
 
   const chats = useSelector(state => state.chat.chats) || []
   const messages = useSelector(state => state.chat.messages) || []
   const loading = useSelector(state => state.chat.loading)
   const activeChat = useSelector(state => state.chat.activeChat)
+  const user = useSelector(state => state.auth.user)  // ✅ user from Redux
 
   useEffect(() => {
     handleGetAllChats()
@@ -227,8 +230,9 @@ export default function Dashboard() {
               ))}
             </div>
 
+            {/* ✅ User Profile + Logout Button */}
             <div
-              className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 hover:opacity-80"
+              className="mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-200"
               style={{
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.08)",
@@ -238,16 +242,31 @@ export default function Dashboard() {
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
                 style={{ background: "linear-gradient(135deg, #6C63FF, #3B82F6)" }}
               >
-                Y
+                {user?.username?.[0]?.toUpperCase() || "Y"}
               </div>
               <div className="overflow-hidden flex-1">
-                <p className="text-sm font-medium text-slate-200 truncate">Yugant</p>
+                <p className="text-sm font-medium text-slate-200 truncate">{user?.username || "Yugant"}</p>
                 <p className="text-xs" style={{ color: "#475569" }}>Free Plan</p>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18l6-6-6-6" stroke="#475569" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+
+              {/* ✅ Logout Button */}
+              <button
+                onClick={handleLogOut}
+                title="Logout"
+                className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg transition-all duration-200 hover:opacity-80 cursor-pointer"
+                style={{
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                  color: "#EF4444",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
+
           </div>
 
           {/* Main Chat Area */}
