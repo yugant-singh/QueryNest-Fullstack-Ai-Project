@@ -9,6 +9,12 @@ const groqModel = new ChatGroq({
   apiKey: process.env.GROQ_API_KEY
 });
 
+// Vision model — image analyze karne ke liye
+const visionModel = new ChatGroq({
+  model: "meta-llama/llama-4-scout-17b-16e-instruct",
+  apiKey: process.env.GROQ_API_KEY
+});
+
 const mistralModal = new ChatMistralAI({
   model: "mistral-small-latest",
   apiKey: process.env.MISTRAL_API_KEY
@@ -16,9 +22,43 @@ const mistralModal = new ChatMistralAI({
 
 const modelWithTools = groqModel.bindTools([searchTool, imageGenTool])
 
+// Image analyze karne ka function
+async function analyzeImage(imageUrl, messages) {
+  try {
+    // Last user message lo — agar kuch nahi likha toh default prompt use karo
+    const lastUserMessage = messages[messages.length - 1]?.content
+    const prompt = (lastUserMessage && lastUserMessage.trim()) 
+      ? lastUserMessage 
+      : "Please analyze and describe this image in detail."
+
+    const response = await visionModel.invoke([
+      new SystemMessage("You are a helpful vision AI assistant. Analyze images and answer questions about them accurately."),
+      new HumanMessage({
+        content: [
+          { type: "image_url", image_url: { url: imageUrl } },
+          { type: "text", text: prompt }
+        ]
+      })
+    ])
+
+    return response.content
+  } catch (err) {
+    console.log("Vision error:", err)
+    return "Sorry, I could not analyze the image."
+  }
+}
+
 export async function generateResponse(messages, fileText = null) {
   try {
 
+    // Case 1: Image upload hui hai — Vision AI use karo
+    if (fileText && fileText.startsWith('__IMAGE_URL__:')) {
+      const imageUrl = fileText.replace('__IMAGE_URL__:', '')
+      console.log("Analyzing image:", imageUrl)
+      return await analyzeImage(imageUrl, messages)
+    }
+
+    // Case 2: PDF/TXT upload hua hai — file content se answer do
     const systemPrompt = fileText
       ? `You are a helpful AI assistant. The user has uploaded a file with the following content:\n\n${fileText}\n\nAnswer questions based on this file content only. Be specific and accurate. Do NOT use any tools.`
       : `You are a helpful AI assistant like Perplexity.

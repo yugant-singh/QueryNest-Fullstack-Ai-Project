@@ -29,11 +29,10 @@ const fileReaderTool = {
       let extractedText = ""
 
       if (mimetype === "application/pdf") {
-        // PDF se text extract karo
         const uint8Array = new Uint8Array(fileBuffer)
         const loadingTask = pdfjsLib.getDocument({ data: uint8Array })
         const pdfDoc = await loadingTask.promise
-        
+
         for (let i = 1; i <= pdfDoc.numPages; i++) {
           const page = await pdfDoc.getPage(i)
           const content = await page.getTextContent()
@@ -42,6 +41,8 @@ const fileReaderTool = {
         }
       } else if (mimetype === "text/plain") {
         extractedText = fileBuffer.toString("utf-8")
+      } else if (mimetype.startsWith("image/")) {
+        extractedText = `__IMAGE_URL__:${uploadResponse.url}`
       }
 
       return {

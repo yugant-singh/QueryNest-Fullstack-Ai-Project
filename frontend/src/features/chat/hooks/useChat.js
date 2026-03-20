@@ -1,9 +1,10 @@
 import { useDispatch } from 'react-redux'
 import {
   setChats, addChat, setActiveChat,
-  setMessages, addMessage, setLoading, setError, clearMessages,removeChat
+  setMessages, addMessage, setLoading, setError,
+  clearMessages, removeChat, setFileText, setFileUrl, clearFile
 } from '../chat.slice'
-import { getAllChats, getAllMessage, sendMessage,deleteChat } from '../services/chat.api'
+import { getAllChats, getAllMessage, sendMessage, deleteChat, uploadFileApi } from '../services/chat.api'
 import { initializeSocket } from '../services/chat.socket'
 
 export const useChat = () => {
@@ -35,27 +36,25 @@ export const useChat = () => {
     }
   }
 
-  async function handleSendMessage({ message, chatId }) {
+  async function handleSendMessage({ message, chatId, fileText }) {
     try {
-      // Turant user message dikhao
       dispatch(addMessage({ role: 'user', content: message }))
       dispatch(setLoading(true))
 
-      const data = await sendMessage({ message, chatId })
+      const data = await sendMessage({ message, chatId, fileText })
 
-      // Nayi chat bani toh sidebar update karo
       if (data.chat) {
         dispatch(addChat(data.chat))
         dispatch(setActiveChat(data.chat._id))
         await handleGetAllChats()
       }
 
-      // AI response turant dikhao
       dispatch(addMessage({
         role: 'ai',
         content: data.aiMessages.content
       }))
 
+       dispatch(clearFile())
     } catch (err) {
       dispatch(setError(err.response?.data?.message || 'Failed to send message'))
     } finally {
@@ -65,17 +64,40 @@ export const useChat = () => {
 
   async function handleNewChat() {
     dispatch(clearMessages())
+    dispatch(clearFile())
   }
 
   async function handleDeleteChat(chatId) {
-  try {
-    await deleteChat(chatId)
-    dispatch(removeChat(chatId))
-    dispatch(clearMessages())
-  } catch (err) {
-    dispatch(setError('Failed to delete chat'))
+    try {
+      await deleteChat(chatId)
+      dispatch(removeChat(chatId))
+      dispatch(clearMessages())
+    } catch (err) {
+      dispatch(setError('Failed to delete chat'))
+    }
   }
-}
 
-  return { handleGetAllChats, handleGetChatMessages, handleSendMessage, handleNewChat, socket,handleDeleteChat }
+  async function handleUploadFile(file) {
+    try {
+      dispatch(setLoading(true))
+      const data = await uploadFileApi(file)
+      dispatch(setFileText(data.text))
+      dispatch(setFileUrl(data.url))
+      return data
+    } catch (err) {
+      dispatch(setError('Failed to upload file'))
+    } finally {
+      dispatch(setLoading(false))
+    }
+  }
+
+  return {
+    handleGetAllChats,
+    handleGetChatMessages,
+    handleSendMessage,
+    handleNewChat,
+    handleDeleteChat,
+    handleUploadFile,
+    socket
+  }
 }

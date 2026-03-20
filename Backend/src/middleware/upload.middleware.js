@@ -9,15 +9,14 @@ export const imagekit = new Imagekit({
 })
 
 const fileFilter = (req, file, cb) => {
-  const allowed = ['.pdf', '.txt', '.docx']
+  const allowed = ['.pdf', '.txt', '.docx', '.jpg', '.jpeg', '.png', '.webp']
   const ext = path.extname(file.originalname).toLowerCase()
   if (allowed.includes(ext)) {
     cb(null, true)
   } else {
-    cb(new Error('Only PDF, TXT, DOCX allowed'))
+    cb(new Error('Only PDF, TXT, DOCX, JPG, PNG allowed'))
   }
 }
-
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,

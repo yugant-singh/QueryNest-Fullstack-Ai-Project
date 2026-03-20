@@ -5,6 +5,7 @@ import Dashboard from '../features/chat/pages/Dashboard'
 import Protected from '../features/auth/components/Protected'
 import PublicRoute from '../features/auth/components/PublicRoute'
 import VerifyInstruction from '../features/auth/pages/VerifyInstruction'
+import Home from '../features/auth/pages/Home'
  export const router = createBrowserRouter([
     {
         path:'/login',
@@ -27,6 +28,9 @@ import VerifyInstruction from '../features/auth/pages/VerifyInstruction'
     {
         path:'/verify-instruction',
         element:<VerifyInstruction/>
+    },{
+        path:'/',
+        element:<Home/>
     }
     
 ])

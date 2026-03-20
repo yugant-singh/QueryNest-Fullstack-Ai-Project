@@ -1,31 +1,42 @@
-import React, { useState } from 'react'
-import { Link ,useNavigate} from 'react-router'
-import {useAuth} from '../hooks/useAuth'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { useAuth } from '../hooks/useAuth'
+import { useSelector, useDispatch } from 'react-redux'
+import { setError } from '../auth.slice'  // ✅ error clear karne ke liye
 
 const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const navigate  = useNavigate()
-  const {handleLogin} = useAuth()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+  const { handleLogin } = useAuth()
+
+  // ✅ Redux se loading aur error lo
+  const loading = useSelector(state => state.auth.loading)
+  const error = useSelector(state => state.auth.error)
+  const user = useSelector(state => state.auth.user)
+
+  // ✅ Login successful hone pe redirect
+  useEffect(() => {
+    if (user) navigate('/dashboard')
+  }, [user])
+
+  // ✅ Component unmount pe error clear karo
+  useEffect(() => {
+    return () => dispatch(setError(null))
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const payload = {
-      email,
-      password
-    }
-
-    await handleLogin(payload)
-    navigate('/dashboard')
-
-
-   
+    dispatch(setError(null))
+    await handleLogin({ email, password })
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-950 to-black flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">QueryNest</h1>
@@ -34,7 +45,27 @@ const Login = () => {
 
         {/* Form Container */}
         <div className="bg-gradient-to-b from-gray-800 to-gray-900 border border-gray-700 rounded-lg p-8 backdrop-blur-sm hover:border-gray-600 transition-all duration-300">
+
+          {/* ✅ Error Message — backend se aaya hua */}
+          {error && (
+            <div className="flex items-start gap-2.5 mb-5 px-4 py-3 rounded-lg"
+              style={{
+                background: "rgba(239,68,68,0.08)",
+                border: "1px solid rgba(239,68,68,0.25)",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="9" stroke="#EF4444" strokeWidth="2" />
+                <path d="M12 8v4M12 16h.01" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <p className="text-sm" style={{ color: "#FCA5A5", fontFamily: "'DM Sans', sans-serif" }}>
+                {error}
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">

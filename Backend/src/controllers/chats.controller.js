@@ -1,12 +1,12 @@
 import { generateResponse, generateMistralTitle } from '../services/ai.service.js';
 import chatModel from '../models/chat.model.js'
 import messageModel from '../models/message.model.js'
-import second from '../services/tools/fileReader.tool.js'
+
 import fileReaderTool from '../services/tools/fileReader.tool.js';
 
 export async function sendMessage(req, res) {
   try {
-    const { message, chat: chatId } = req.body;
+ const { message, chat: chatId, fileText } = req.body;
 
     let chat = null, title = null
     if (!chatId) {
@@ -27,7 +27,7 @@ export async function sendMessage(req, res) {
 
     const chatIdToUse = chatId || chat._id
     const messages = await messageModel.find({ chat: chatIdToUse })
-    const response = await generateResponse(messages)
+    const response = await generateResponse(messages, fileText)
 
 
     const aiMessages = await messageModel.create({
