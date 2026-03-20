@@ -4,30 +4,31 @@ import AuthRouter from '../src/routes/auth.routes.js'
 import chatRouter from '../src/routes/chats.routes.js'
 import cors from 'cors'
 import morgan from 'morgan'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-// Load environment variables
-
-
-// Create Express application
 const app = express();
 
-// Middleware
+// ✅ Middlewares
 app.use(express.json());
-app.use(express.static("./public"))
-app.use(cors({
-  origin:"http://localhost:5173",
-  credentials:true,
-  methods:["GET","POST","PUT","DELETE"]
-}))
-
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"))
 
+// ✅ CORS — localhost + Render dono
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://querynest-gh05.onrender.com"
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"]
+}))
 
-
-
-// Basic Health Check Route
+// ✅ Health Check
 app.get('/health', (req, res) => {
   res.status(200).json({
     message: 'Server is running',
@@ -35,30 +36,23 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.use('/api/auth', AuthRouter) 
+// ✅ API Routes — pehle
+app.use('/api/auth', AuthRouter)
 app.use('/api/chats', chatRouter)
-
-// Test Route
 app.get('/api/test', (req, res) => {
-  res.status(200).json({
-    message: 'API is working',
-    status: 'success'
-  });
+  res.status(200).json({ message: 'API is working', status: 'success' });
 });
 
-  
+// ✅ Static files
+app.use(express.static(path.join(__dirname, '../public')))
 
+// ✅ React Router fallback — SABSE LAST MEIN
+// Ye line /register, /login, /dashboard sab ko index.html return karegi
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'index.html'))
+})
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({
-    message: 'Route not found',
-    path: req.path
-  });
-});
-
-
-// Error Handling Middleware
+// ✅ Error Handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
@@ -66,6 +60,5 @@ app.use((err, req, res, next) => {
     status: 'error'
   });
 });
-
 
 export default app;

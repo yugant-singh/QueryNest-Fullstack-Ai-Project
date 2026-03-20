@@ -1,6 +1,6 @@
 import axios from 'axios'
 const api = axios.create({
-    baseURL:"https://querynest-gh05.onrender.com/",
+    baseURL:"http://localhost:5173",
     withCredentials:true
 })
 
