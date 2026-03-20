@@ -46,9 +46,8 @@ app.get('/api/test', (req, res) => {
 // ✅ Static files
 app.use(express.static(path.join(__dirname, '../public')))
 
-// ✅ React Router fallback — SABSE LAST MEIN
-// Ye line /register, /login, /dashboard sab ko index.html return karegi
-app.get('*', (req, res) => {
+
+app.get('/{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'))
 })
 
