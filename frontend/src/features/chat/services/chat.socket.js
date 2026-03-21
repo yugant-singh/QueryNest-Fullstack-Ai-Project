@@ -3,10 +3,11 @@ import { io } from "socket.io-client";
 let socket;
 
 export const initializeSocket = () => {
-
   if (!socket) {
+  
+    const URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
-    socket = io("http://localhost:3000", {
+    socket = io(URL, {
       withCredentials: true
     });
 
@@ -14,6 +15,9 @@ export const initializeSocket = () => {
       console.log("Socket connected:", socket.id);
     });
 
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
   }
 
   return socket;
