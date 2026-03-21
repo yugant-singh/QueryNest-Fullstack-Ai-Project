@@ -1,24 +1,27 @@
-import nodemailer from 'nodemailer'
+import * as Brevo from '@getbrevo/brevo'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GOOGLE_USER,
-    pass: process.env.GMAIL_APP_PASSWORD  
-  }
-})
+const apiInstance = new Brevo.TransactionalEmailsApi()
+apiInstance.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+)
 
 export const sendEmail = async ({ to, subject, text, html }) => {
   try {
-    const info = await transporter.sendMail({
-      from: `QueryNest <${process.env.GOOGLE_USER}>`,
-      to,
-      subject,
-      html
-    })
-    console.log("Email sent:", info.response)
+    const sendSmtpEmail = new Brevo.SendSmtpEmail()
+
+    sendSmtpEmail.subject = subject
+    sendSmtpEmail.htmlContent = html
+    sendSmtpEmail.sender = {
+      name: 'QueryNest',
+      email: process.env.GOOGLE_USER  // ✅ tera Gmail as sender
+    }
+    sendSmtpEmail.to = [{ email: to }]  // ✅ kisi bhi email pe bhejo
+
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail)
+    console.log('Email sent successfully:', data.body?.messageId)
   } catch (err) {
-    console.error("Email sending failed:", err.message)
+    console.error('Email sending failed:', err.message)
     throw err
   }
 }
