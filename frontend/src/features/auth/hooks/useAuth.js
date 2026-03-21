@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux'
-import { setError, setUser, setLoading ,clearUser} from '../auth.slice'
+import { setError, setUser, setLoading, clearUser } from '../auth.slice'
 import { register, login, getMe, logout } from '../services/auth.api'
 
 
@@ -7,11 +7,9 @@ export function useAuth() {
     const dispatch = useDispatch()
 
     async function handleRegister({ username, email, password }) {
-
         try {
             dispatch(setLoading(true))
             const data = await register({ username, email, password })
-
         }
         catch (err) {
             dispatch(setError(err.response?.data?.message || "Registration Failed"))
@@ -20,6 +18,7 @@ export function useAuth() {
             dispatch(setLoading(false))
         }
     }
+
     async function handleLogin({ email, password }) {
         try {
             dispatch(setLoading(true))
@@ -34,35 +33,39 @@ export function useAuth() {
         }
     }
 
-    async function handleGetMe (){
-        try{
+    async function handleGetMe() {
+        try {
             dispatch(setLoading(true))
-            const data  = await getMe()
+            const data = await getMe()
             dispatch(setUser(data.user))
         }
-        catch(err){
-              dispatch(setError(err.response?.data?.message || "Could not be able to fetch user detail "))
+        catch (err) {
+            // ✅ 401 pe error mat dikhao — user sirf logged out hai
+            if (err.response?.status === 401) {
+                dispatch(clearUser())
+            } else {
+                dispatch(setError(err.response?.data?.message || "Could not fetch user details"))
+            }
         }
-        finally{
+        finally {
             dispatch(setLoading(false))
         }
     }
 
     async function handleLogOut() {
-    try {
-        dispatch(setLoading(true))
-        await logout()
-        dispatch(clearUser())       
-        window.location.href = '/login'  
+        try {
+            dispatch(setLoading(true))
+            await logout()
+            dispatch(clearUser())
+            window.location.href = '/login'
+        }
+        catch (err) {
+            dispatch(setError(err.response?.data?.message || "LogOut Failed"))
+        }
+        finally {
+            dispatch(setLoading(false))
+        }
     }
-    catch (err) {
-        dispatch(setError(err.response?.data?.message || "LogOut Failed"))
-    }
-    finally {
-        dispatch(setLoading(false))
-    }
-}
 
-
-    return {handleRegister,handleLogin,handleGetMe,handleLogOut}
+    return { handleRegister, handleLogin, handleGetMe, handleLogOut }
 }

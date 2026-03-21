@@ -1,4 +1,4 @@
-import React  from 'react'
+import React from 'react'
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [imagePreview, setImagePreview] = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const sidebarRef = useRef(null)
 
   const { handleGetAllChats, handleGetChatMessages, handleSendMessage, handleNewChat, handleDeleteChat, handleUploadFile } = useChat()
   const { handleLogOut } = useAuth()
@@ -99,10 +100,18 @@ export default function Dashboard() {
         ::-webkit-scrollbar-thumb { background: rgba(108,99,255,0.3); border-radius: 10px; }
         textarea { caret-color: #6C63FF; }
         textarea:focus { outline: none; }
+
+        /* ✅ Mobile sidebar fix */
+        .sidebar-btn { 
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+          cursor: pointer;
+        }
       `}</style>
 
       <div className="relative w-screen h-screen overflow-hidden" style={{ background: "#080810" }}>
 
+        {/* Background blobs */}
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute -top-20 -left-10 w-72 h-72 md:w-96 md:h-96 rounded-full opacity-20"
             style={{ background: "radial-gradient(circle, #6C63FF, transparent 70%)", filter: "blur(50px)" }} />
@@ -112,24 +121,34 @@ export default function Dashboard() {
             style={{ background: "radial-gradient(circle, #8B5CF6, transparent 70%)", filter: "blur(60px)" }} />
         </div>
 
-        {/* Mobile Overlay */}
+        {/* ✅ Mobile Overlay — pointer events se band hoga, sidebar ke clicks block nahi honge */}
         {sidebarOpen && (
-  <div
-    className="fixed inset-0 z-20 bg-black/60 md:hidden touch-none"
-    onClick={() => setSidebarOpen(false)}
-  />
-)}
+          <div
+            className="fixed inset-0 bg-black/60 md:hidden"
+            style={{ zIndex: 25 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         <div className="relative z-10 flex h-full w-full p-2 md:p-4 gap-3">
 
-          {/* Sidebar */}
-<div className={`fixed md:relative top-0 left-0 h-full z-30 md:z-auto w-72 md:w-64 flex-shrink-0 flex flex-col rounded-none md:rounded-2xl p-3 transition-transform duration-300 touch-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-  style={{ background: "rgba(15,15,30,0.97)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}>
-
+          {/* ✅ Sidebar — z-index 30, overlay 25 se upar */}
+          <div
+            ref={sidebarRef}
+            className={`fixed md:relative top-0 left-0 h-full w-72 md:w-64 flex-shrink-0 flex flex-col rounded-none md:rounded-2xl p-3 transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
+            style={{
+              background: "rgba(15,15,30,0.97)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(16px)",
+              zIndex: 30,
+            }}
+          >
             {/* Mobile close button */}
-            <button className="md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg z-10"
-              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8" }}
-              onClick={() => setSidebarOpen(false)}>
+            <button
+              className="sidebar-btn md:hidden absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg"
+              style={{ background: "rgba(255,255,255,0.07)", color: "#94A3B8", border: "none" }}
+              onClick={() => setSidebarOpen(false)}
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
@@ -137,10 +156,15 @@ export default function Dashboard() {
 
             <Logo />
 
-            {/* New Chat Button */}
-            <button className="flex cursor-pointer items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-medium mb-4 transition-all duration-200 hover:opacity-80"
+            {/* ✅ New Chat Button */}
+            <button
+              className="sidebar-btn flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-medium mb-4 transition-all duration-200 hover:opacity-80"
               style={{ background: "rgba(108,99,255,0.15)", border: "1px solid rgba(108,99,255,0.25)", color: "#a5a0ff" }}
-              onClick={() => { handleNewChat(); setSidebarOpen(false) }}>
+              onClick={() => {
+                handleNewChat()
+                setSidebarOpen(false)
+              }}
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
@@ -149,41 +173,48 @@ export default function Dashboard() {
 
             <p className="text-xs font-semibold uppercase tracking-widest px-2 mb-2" style={{ color: "#475569" }}>Recent</p>
 
-            {/* Chat List */}
+            {/* ✅ Chat List */}
             <div className="flex-1 overflow-y-auto flex flex-col gap-1">
               {chats.map((chat) => (
-                <div key={chat._id} className="relative flex items-center rounded-xl transition-all duration-200"
+                <div
+                  key={chat._id}
+                  className="relative flex items-center rounded-xl transition-all duration-200"
                   style={{
-                    background: activeChat === chat._id ? "rgba(108,99,255,0.12)" : "transparent",
+                    background: activeChat === chat._id ? "rgba(108,99,255,0.12)" : hoveredChat === chat._id ? "rgba(255,255,255,0.04)" : "transparent",
                     border: `1px solid ${activeChat === chat._id ? "rgba(108,99,255,0.3)" : "transparent"}`,
                   }}
                   onMouseEnter={() => setHoveredChat(chat._id)}
-                  onMouseLeave={() => setHoveredChat(null)}>
-
-                  {/* Chat title — fixed paddingRight for delete button space */}
+                  onMouseLeave={() => setHoveredChat(null)}
+                >
+                  {/* ✅ Chat select button */}
                   <button
-                    onClick={() => handleChatSelect(chat._id)}
-                    className="flex-1 text-left px-3 py-2.5 text-sm truncate cursor-pointer"
+                    className="sidebar-btn flex-1 text-left px-3 py-2.5 text-sm truncate"
                     style={{
                       color: activeChat === chat._id ? "#a5a0ff" : "#94A3B8",
                       background: "transparent",
                       border: "none",
-                      paddingRight: "2.5rem" // ← fixed — delete button ke liye space
-                    }}>
+                      paddingRight: "2.5rem",
+                    }}
+                    onClick={() => handleChatSelect(chat._id)}
+                  >
                     {chat.title}
                   </button>
 
-                  {/* Delete button — desktop pe hover pe, mobile pe tap pe */}
+                  {/* ✅ Delete button — mobile pe hamesha thoda visible, hover pe full */}
                   <button
-                    className="absolute right-2 w-6 h-6 flex items-center justify-center rounded-md transition-all"
+                    className="sidebar-btn absolute right-2 w-6 h-6 flex items-center justify-center rounded-md transition-all"
                     style={{
                       color: "#EF4444",
                       border: "none",
                       background: "rgba(239,68,68,0.1)",
-                      opacity: hoveredChat === chat._id ? 1 : 0,  // desktop hover
+                      // ✅ Mobile pe hamesha dikhao, desktop pe hover pe
+                      opacity: hoveredChat === chat._id ? 1 : 0.3,
                     }}
-                    onTouchStart={(e) => { e.stopPropagation() }} // mobile touch
-                    onClick={(e) => { e.stopPropagation(); handleDeleteChat(chat._id) }}>
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteChat(chat._id)
+                    }}
+                  >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                       <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -192,16 +223,17 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* User Account — Dropdown */}
+            {/* ✅ User Account Dropdown */}
             <div className="mt-3 relative" ref={dropdownRef}>
-
-              {/* Dropdown Menu */}
               {dropdownOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 rounded-xl overflow-hidden z-50"
-                  style={{ background: "rgba(15,15,35,0.98)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(20px)" }}>
-
-                  <button className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-all hover:opacity-80"
-                    style={{ background: "transparent", border: "none", color: "#94A3B8" }}>
+                <div
+                  className="absolute bottom-full left-0 right-0 mb-2 rounded-xl overflow-hidden"
+                  style={{ background: "rgba(15,15,35,0.98)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(20px)", zIndex: 50 }}
+                >
+                  <button
+                    className="sidebar-btn w-full flex items-center gap-3 px-4 py-3 text-sm transition-all hover:opacity-80"
+                    style={{ background: "transparent", border: "none", color: "#94A3B8" }}
+                  >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
                       <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -211,9 +243,15 @@ export default function Dashboard() {
 
                   <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
 
-                  <button className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-all hover:opacity-80"
+                  <button
+                    className="sidebar-btn w-full flex items-center gap-3 px-4 py-3 text-sm transition-all hover:opacity-80"
                     style={{ background: "transparent", border: "none", color: "#EF4444" }}
-                    onClick={() => { handleLogOut(); setDropdownOpen(false); setSidebarOpen(false) }}>
+                    onClick={() => {
+                      handleLogOut()
+                      setDropdownOpen(false)
+                      setSidebarOpen(false)
+                    }}
+                  >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                       <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -223,12 +261,16 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* User Card */}
-              <button className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-200 hover:opacity-80"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}
-                onClick={() => setDropdownOpen(!dropdownOpen)}>
-                <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, #6C63FF, #3B82F6)" }}>
+              {/* ✅ User Card */}
+              <button
+                className="sidebar-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-200 hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
+                  style={{ background: "linear-gradient(135deg, #6C63FF, #3B82F6)" }}
+                >
                   {user?.username?.[0]?.toUpperCase() || "Y"}
                 </div>
                 <div className="overflow-hidden flex-1 text-left">
@@ -251,9 +293,12 @@ export default function Dashboard() {
             <div className="flex items-center justify-between px-4 md:px-5 py-3.5"
               style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center gap-3">
-                <button className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#94A3B8" }}
-                  onClick={() => setSidebarOpen(true)}>
+                {/* ✅ Hamburger button */}
+                <button
+                  className="sidebar-btn md:hidden w-8 h-8 flex items-center justify-center rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#94A3B8", border: "none" }}
+                  onClick={() => setSidebarOpen(true)}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
@@ -396,7 +441,7 @@ export default function Dashboard() {
                 />
 
                 <button onClick={handleSend} disabled={loading}
-                  className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-50"
+                  className="sidebar-btn w-8 h-8 md:w-9 md:h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-150 hover:opacity-80 active:scale-95 disabled:opacity-50"
                   style={{ background: "linear-gradient(135deg, #6C63FF, #8B5CF6)", boxShadow: "0 0 16px rgba(108,99,255,0.4)", border: "none" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
